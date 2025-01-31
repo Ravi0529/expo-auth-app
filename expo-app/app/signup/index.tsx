@@ -34,7 +34,7 @@ export default function SignupScreen() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["authUser"] }); // Refresh auth state
-      router.replace("/login"); // Redirect to login page
+      router.replace("/home"); // Redirect to login page
     },
   });
 
