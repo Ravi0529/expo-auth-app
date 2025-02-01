@@ -1,7 +1,14 @@
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import * as SecureStore from "expo-secure-store";
 import Button from "../../components/Button";
 
 export default function LoginScreen() {
@@ -12,12 +19,16 @@ export default function LoginScreen() {
 
   const { mutate, isPending, isError, error } = useMutation({
     mutationFn: async () => {
-      const response = await fetch("http://localhost:8000/v1/auth/login", {
+      const token = await SecureStore.getItemAsync("jwt");
+      if (!token) return null;
+      const response = await fetch("http://192.168.29.74:8000/v1/auth/login", {
         method: "POST",
         headers: {
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ username, password }),
+        credentials: "include",
       });
 
       const data = await response.json();
@@ -27,11 +38,12 @@ export default function LoginScreen() {
       if (!response.ok) {
         throw new Error(data.message || "Failed to login");
       }
+      await SecureStore.setItemAsync("jwt", JSON.stringify(data.token));
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["authUser"] }); // Refresh auth state
-      router.replace("/home"); // Redirect to home page
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      router.replace("/home");
     },
   });
 
@@ -45,9 +57,11 @@ export default function LoginScreen() {
       <Text className="text-3xl font-bold text-blue-600 mb-6">
         Login to your Account
       </Text>
-      
+
       {isError && (
-        <Text className="text-red-500 mb-4">{error?.message || "Login failed"}</Text>
+        <Text className="text-red-500 mb-4">
+          {error?.message || "Login failed"}
+        </Text>
       )}
 
       <TextInput

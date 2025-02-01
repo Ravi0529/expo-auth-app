@@ -1,7 +1,14 @@
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import * as SecureStore from "expo-secure-store";
 import Button from "../../components/Button";
 
 export default function SignupScreen() {
@@ -15,12 +22,22 @@ export default function SignupScreen() {
 
   const { mutate, isPending, isError, error } = useMutation({
     mutationFn: async () => {
-      const response = await fetch("http://localhost:8000/v1/auth/signup", {
+      const token = await SecureStore.getItemAsync("jwt");
+      if (!token) return null;
+      const response = await fetch("http://192.168.29.74:8000/v1/auth/signup", {
         method: "POST",
         headers: {
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ firstName, lastName, username, email, password }),
+        credentials: "include",
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          username,
+          email,
+          password,
+        }),
       });
 
       const data = await response.json();
@@ -33,8 +50,8 @@ export default function SignupScreen() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["authUser"] }); // Refresh auth state
-      router.replace("/home"); // Redirect to login page
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      router.replace("/home");
     },
   });
 
@@ -50,7 +67,9 @@ export default function SignupScreen() {
       </Text>
 
       {isError && (
-        <Text className="text-red-500 mb-4">{error?.message || "Signup failed"}</Text>
+        <Text className="text-red-500 mb-4">
+          {error?.message || "Signup failed"}
+        </Text>
       )}
 
       <TextInput

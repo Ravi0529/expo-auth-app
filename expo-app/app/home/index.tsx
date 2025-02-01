@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import * as SecureStore from "expo-secure-store";
 
 interface AuthUser {
   user?: {
@@ -15,7 +16,7 @@ export default function HomeScreen() {
 
   const { mutate: logout } = useMutation({
     mutationFn: async () => {
-      const response = await fetch("http://localhost:8000/v1/auth/logout", {
+      const response = await fetch("http://192.168.29.74:8000/v1/auth/logout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -24,6 +25,7 @@ export default function HomeScreen() {
       });
 
       if (!response.ok) throw new Error("Logout failed");
+      await SecureStore.deleteItemAsync("jwt");
       return response.json();
     },
     onSuccess: () => {
