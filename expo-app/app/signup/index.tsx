@@ -22,12 +22,9 @@ export default function SignupScreen() {
 
   const { mutate, isPending, isError, error } = useMutation({
     mutationFn: async () => {
-      const token = await SecureStore.getItemAsync("jwt");
-      if (!token) return null;
       const response = await fetch("http://192.168.29.74:8000/v1/auth/signup", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         credentials: "include",
@@ -47,10 +44,12 @@ export default function SignupScreen() {
       if (!response.ok) {
         throw new Error(data.message || "Failed to create account");
       }
+      await SecureStore.setItemAsync("jwt", String(data.token));
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      queryClient.refetchQueries({ queryKey: ["authUser"] });
       router.replace("/home");
     },
   });

@@ -19,34 +19,31 @@ export default function LoginScreen() {
 
   const { mutate, isPending, isError, error } = useMutation({
     mutationFn: async () => {
-      const token = await SecureStore.getItemAsync("jwt");
-      if (!token) return null;
       const response = await fetch("http://192.168.29.74:8000/v1/auth/login", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ username, password }),
         credentials: "include",
       });
-
+  
       const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to login");
-      }
-      await SecureStore.setItemAsync("jwt", JSON.stringify(data.token));
+      if (data.error) throw new Error(data.error);
+      if (!response.ok) throw new Error(data.message || "Failed to login");
+  
+      // Store token properly
+      await SecureStore.setItemAsync("jwt", String(data.token));
+  
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      queryClient.refetchQueries({ queryKey: ["authUser"] });
       router.replace("/home");
     },
   });
-
+  
   const handleLogin = () => {
     if (!username || !password) return;
     mutate();

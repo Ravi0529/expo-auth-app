@@ -1,25 +1,27 @@
 import * as SecureStore from "expo-secure-store";
 const API_URL = process.env.API_URL;
+import axios from "axios";
 
 export const fetchAuthUser = async () => {
-    try {
-        const token = await SecureStore.getItemAsync("jwt");
-        if (!token) return null;
+    const token = await SecureStore.getItemAsync("jwt");
+    console.log("Retrieved Token in fetchAuthUser:", token); // Debugging
 
-        const response = await fetch(`${API_URL}/v1/auth/getHome`, {
-            method: "GET",
+    if (!token) return null; // Ensure token is available
+
+    try {
+        const response = await axios.get(`${API_URL}/authuser`, {
             headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
             },
-            credentials: "include",
         });
-        const data = await response.json();
-        if (data.error) return null;
-        if (!response.ok) throw new Error(data.message || "Something went wrong");
-        return data;
-    } catch (error) {
-        console.error("Fetch User Error:", error);
+        console.log("Auth User Data:", response.data); // Debugging
+        return response.data;
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error("Error fetching auth user:", error.message);
+        } else {
+            console.error("Error fetching auth user:", error);
+        }
         return null;
     }
 };
